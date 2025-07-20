@@ -1,177 +1,93 @@
 
-#include "main.h"
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
-void draw_scan_line(int y, int x0, int x1, char symbol, char grid[HEIGHT][WIDTH])
+float A, B, C; 
+
+float cube_width = 10;
+int width = 160, height = 44;
+float z_buffer[160 * 44];
+char buffer[160 * 44];
+int BACKGROUND_ASCII_CODE = ' ';
+int distance_from_cam = 40;
+float K1 = 40;
+int idx;
+
+float increment_speed = 0.6;
+
+float x, y, z;
+float ooz;
+int xp, yp;
+
+float calculate_x(int i, int j, int k)
 {
-   int left = min(x0, x1);
-   int right = max(x0, x1);
-
-   for (int x = left; x <= right; ++x)
-        grid[y][x] = symbol;
+    return  j * sin(A) * sin(B) * cos(C)  - k * cos(A) * sin(B) * cos(C) +
+            j * cos(A) * sin(C)  + k * sin(A) * sin(C) + i * cos(B) * cos(C);
 }
 
-void draw_flat_bottom(vec2 t, vec2 b0, vec2 b1, char grid[HEIGHT][WIDTH])
+float calculate_y(int i, int j, int k)
 {
-    int xb = t.x;
-    int xe = t.x;
-
-    float x_dec0 = (t.x - b0.x) / (b0.y - t.y);
-    float x_dec1 = (t.x - b1.x) / (b1.y - t.y);
-        
-    int yb = (int)t.y;
-    int ye = (int)b0.y + 1;
-
-    for (int y = yb; y < ye; ++y)
-    {
-        draw_scan_line(y, (int)xb, (int)xe, '*', grid);
-        xb -= x_dec0;
-        xe -= x_dec1;
-    }
+    return  j * cos(A) * cos(C) + k * sin(A) * cos(C) - 
+            j * sin(A) * sin(B)  * sin(C) + k * cos(A) * sin(B)  * sin(C) -
+            i * cos(B) * sin(C);
 }
 
-void draw_flat_top(vec2 t0, vec2 t1, vec2 b, char grid[HEIGHT][WIDTH])
+float calculate_z(int i, int j, int k)
 {
-    int xb = t0.x;
-    int xe = t1.x;
-
-    float x_inc0 = (b.x - t0.x) / (b.y - t0.y);
-    float x_inc1 = (b.x - t1.x) / (b.y - t1.y);
-        
-    int yb = (int)t0.y;
-    int ye = (int)b.y + 1;
-
-    for (int y = yb; y < ye; ++y)
-    {
-        draw_scan_line(y, (int)xb, (int)xe, '*', grid);
-        xb += x_inc0;
-        xe += x_inc1;
-    }
+    return k * cos(A) * cos(B) - j * sin(A) * cos(B) + i * sin(B);
 }
 
-void draw_triangle(vec2 vector0, vec2 vector1, vec2 vector2, char grid[HEIGHT][WIDTH])
+void calculate_for_surface(float cube_x, float cube_y, float cube_z, int ch)
 {
-    vec2 v0 = vector0;
-    vec2 v1 = vector1;
-    vec2 v2 = vector2;
+    x = calculate_x(cube_x, cube_y, cube_z);
+    y = calculate_y(cube_x, cube_y, cube_z);
+    z = calculate_z(cube_x, cube_y, cube_z) + distance_from_cam;
 
-    // sort by asc y
-    if (v0.y > v1.y)
-    {
-        v0 = vector1;
-        v1 = vector0;
-    }
-    
-    if (v1.y > v2.y)
-    {
-        vec2 tmp = v2;
-        v2 = v1;
-        v1 = tmp;
-    }
+    ooz = 1/z;
 
-    if (v0.y > v1.y)
-    {
-        vec2 tmp = v0;
-        v0 = v1;
-        v1 = tmp;
-    }
+    xp = (int)(width/2 + K1 * ooz * x * 2);
+    yp = (int)(height/2 + K1 * ooz * y);
 
-    if (v2.y == v1.y)
+    idx = xp + yp * width;
+    if (idx >= 0 && idx < width * height)
     {
-        draw_flat_bottom(v0, v1, v2, grid);
-        return;
-    }
-
-    if (v0.y == v1.y)
-    {
-        draw_flat_top(v0, v1, v2, grid);
-        return;
-    }
-
-    vec2 midpoint = 
-    {
-        v0.x + (v2.x - v0.x) * (v1.y - v0.y) / (v2.y - v0.y),
-        v1.y
-    };
-    
-    draw_flat_bottom(v0, v1, midpoint, grid);
-    draw_flat_top(v1, midpoint, v2, grid);
-}
-
-void draw_cube()
-{
-    for (int i = 0; i < 12; ++i)
-    {
-        int triangle[3];
-        for (int j = 0; j < 3; ++j)
-            triangle[j] = cube_triangles[i][j];
-
-        vec3 transformed_vertices[3];
-        for (int k = 0; k < 3; ++k)
+        if (ooz > z_buffer[idx])
         {
-            transformed_vertices[k] = cube_vertices[triangle[k]];
-            // rotate
-            // push to screen
-            // scale
+            z_buffer[idx] = ooz;
+            buffer[idx] = ch;
         }
-        // triangle displayed ?
-        // back face culling
-        // continue early
-        // project 2D Point
-            // 
-        // draw triangle
     }
-}
-
-void render(char grid[HEIGHT][WIDTH], char* buffer)
-{
-    // clear_screen();
-    printf("\x1B[H");
-    for (int i = 0; i < HEIGHT; ++i)
-    {
-        // fuer jede reihe 
-        int start_offset = i * (WIDTH + 1); // buffer begin offset per row
-
-        // slice
-        for (int j = 0; j < WIDTH; ++j)
-            buffer[start_offset+j] = grid[i][j];
-        buffer[start_offset + WIDTH] = '\n';
-    }
-
-    for (int i = 0; i < BUFFER_SIZE; ++i)
-        putchar(buffer[i]);
-}
-
-void init(char grid[HEIGHT][WIDTH])
-{
-    printf("\x1B[2J\x1B[?25l");  // clear screen + hide cursor
-    for (int y = 0; y < HEIGHT; ++y)
-        for (int x = 0; x < WIDTH; ++x)
-            grid[y][x] = ' ';
 }
 
 int main()
-{ 
-    char grid[HEIGHT][WIDTH];
-    char buffer[BUFFER_SIZE];
-    init(grid);
-
-    while(1)
+{
+    printf("\x1b[2J");
+    while (1)
     {
-        vec2 v1 = {10, 5};
-        vec2 v2 = {150, 15};
-        vec2 v3 = {70, 34};
+        printf("\x1b[2J");
+        memset(buffer, BACKGROUND_ASCII_CODE, width * height);
+        memset(z_buffer, 0, width * height * 4);
+        for (float cube_x = -cube_width; cube_x < cube_width; cube_x += increment_speed)
+            for (float cube_y = -cube_width; cube_y < cube_width; cube_y += increment_speed)
+            {
+                calculate_for_surface(cube_x, cube_y, -cube_width, '~');
+                calculate_for_surface(cube_width, cube_y, cube_x, '+');
+                calculate_for_surface(-cube_width, cube_y, -cube_x, '-');
+                calculate_for_surface(-cube_x, cube_y, cube_width, ':');
+                calculate_for_surface(cube_x, -cube_width, -cube_y, '.');
+                calculate_for_surface(cube_x, cube_width, cube_y, ',');
+                
+            }   
+        printf("\x1b[H");
+        for (int k = 0; k < width * height; ++k)
+            putchar(k % width ? buffer[k] : 10);
 
-        vec2 v4 = {200, 5};
-        vec2 v5 = {10, 5};
-        vec2 v6 = {100, 30};
-        
-        // draw_flat_bottom(v1, v2, v3, grid);
-        // draw_flat_top(v4, v5, v6, grid);
-        draw_triangle(v1, v2, v3, grid);
-        render(grid, buffer);
-        usleep(100000);
+        A += 0.005;
+        B += 0.005;
+        usleep(5000);
     }
-    
     return 0;
 }
 
