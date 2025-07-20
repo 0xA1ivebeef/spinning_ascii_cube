@@ -1,0 +1,57 @@
+
+// !!! TRIGONOMETRIE FUNKTIONEN IN MATH.H ERWARTEN WINKEL IN RADIANT NICHT IN GRAD !!!
+// define a space
+// define startcoordinates
+// rotate the points
+// draw the result 
+
+/* PUNKT
+    ein Punkt x, y ist eine Position im Raum (x, y) 
+    
+    Subtraktion:
+    v = B - A = (x2 - x1, y2 - y1) gibt einen Vektor von Punkt A nach B
+    
+    Addition mit Vektor:
+    A' = A + v bewegt Punkt A um Richtung und Laenge von Vektor v
+*/
+
+/* VEKTOR 
+    ein Vektor ist eine gerichtete Groesse [x, y] 
+    mit horizontaler Komponente x
+    und vertikaler Komponente y
+    ein Vektor zeigt vom Ursprung (0, 0) zum Punkt (x, y)
+    
+    Laenge eines Vektors |v| = sqrt(x^2 + y^2)
+    
+    Richtung (Winkel) eines Vektors zur x Achse = arctan(y/x)
+
+    Operationen:
+    Addition: v1 + v2 = (v1.x + v2.x, v1.y + v2.y) (!Linearkombination)
+    Skalar Multiplizierung: c * v = c*v.x + c*v.y (skaliert die Laenge eines Vektors)
+    Rotation:
+        durch Rotationsmatrix: 
+        R(alpha) =  [cos alpha -sin alpha]
+                    [sin alpha  cos alpha]
+    
+    v' = R(alpha) * v
+    
+       = [cos alpha -sin alpha] * [x]
+         [sin alpha  cos alpha] * [y]
+
+    v' = [x*cos alpha - y*sin alpha]
+         [x*sin alpha + y*cos alpha]
+*/
+
+/*
+    einen vektor kann man um einen winkel um einen festen punkt rotieren
+
+*/
+
+
+
+PROJECTIVE PROJECTION (for rendering)
+
+simulating 3d objects in 2d space
+
+-> lichtquelle trifft auf objekt
+-> 
